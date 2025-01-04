@@ -480,8 +480,11 @@
         // 发送消息函数
         async function sendToAI(message) {
             try {
+                console.log('Sending request to worker...');
                 const token = localStorage.getItem('turnstileToken');
+                
                 if (!token) {
+                    console.log('No token found, showing verification interface');
                     showVerificationInterface();
                     throw new Error('需要验证');
                 }
@@ -490,22 +493,23 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'CF-Turnstile-Token': token,
-                        'X-Token-Validated': '1'  // 标记token已验证
+                        'CF-Turnstile-Token': token
                     },
                     body: JSON.stringify({
                         prompt: message
                     })
                 });
 
-                if (response.status === 403) {
-                    localStorage.removeItem('turnstileToken');
-                    showVerificationInterface();
-                    throw new Error('验证已过期，请重新验证');
-                }
-
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
+
                 if (!response.ok) {
+                    if (response.status === 403) {
+                        localStorage.removeItem('turnstileToken');
+                        showVerificationInterface();
+                        throw new Error('验证已过期，请重新验证');
+                    }
                     throw new Error(data.error || 'API请求失败');
                 }
 
