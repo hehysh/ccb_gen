@@ -488,16 +488,13 @@
         // 发送消息函数
         async function sendToAI(message) {
             try {
-                console.log('Sending request to worker...');
                 const token = localStorage.getItem('turnstileToken');
-                
                 if (!token) {
-                    console.log('No token found, showing verification interface');
                     showVerificationInterface();
                     throw new Error('需要验证');
                 }
 
-                const response = await fetch(API_CONFIG.endpoint, {
+                const response = await fetch('https://ccb-gen.hehysh.workers.dev/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -508,19 +505,16 @@
                     })
                 });
 
-                console.log('Response status:', response.status);
-                const data = await response.json();
-                console.log('Response data:', data);
-
                 if (!response.ok) {
                     if (response.status === 403) {
                         localStorage.removeItem('turnstileToken');
                         showVerificationInterface();
                         throw new Error('验证已过期，请重新验证');
                     }
-                    throw new Error(data.error || 'API请求失败');
+                    throw new Error(`API请求失败: ${response.status}`);
                 }
 
+                const data = await response.json();
                 return data.result.response;
             } catch (error) {
                 console.error('API调用错误:', error);
