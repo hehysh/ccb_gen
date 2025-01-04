@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCB AI 助手</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .title {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: fadeInDown 1s ease;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            animation: fadeInUp 1s ease 0.5s both;
+        }
+
+        .chat-container {
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            height: 70vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: fadeIn 1s ease;
+            margin: 0 auto; /* 居中 */
+        }
+
+        .chatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .chatMessages::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
+        .message {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease forwards;
+            display: inline-block;
+            max-width: 280px;
+            margin: 10px;
+            padding: 12px 18px;
+            border-radius: 15px;
+            word-wrap: break-word;
+            font-size: 0.95em;
+            line-height: 1.5;
+            box-sizing: border-box;
+            width: fit-content;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #007AFF, #00C6FF);
+            color: white;
+            margin-left: auto;
+            margin-right: 10px;
+            border-radius: 15px 15px 0 15px;
+            animation: slideInRight 0.5s ease forwards;
+            float: right;
+            clear: both;
+        }
+
+        .ai-message {
+            background: #f0f0f0;
+            color: #333;
+            margin-right: auto;
+            margin-left: 10px;
+            border-radius: 15px 15px 15px 0;
+            animation: slideInLeft 0.5s ease forwards;
+            float: left;
+            clear: both;
+        }
+
+        .chatInput {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+            padding: 20px;
+            background: white;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .chatInput.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+        }
+
+        .chatInput input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .chatInput input:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 10px rgba(0,122,255,0.2);
+        }
+
+        .chatInput button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #007AFF, #00C6FF);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chatInput button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,122,255,0.3);
+        }
+
+        .chatInput button:active {
+            transform: translateY(0);
+        }
+
+        .normal-message {
+            transform: none !important;
+            margin: 10px 0 10px 10px !important;
+            background: #f0f0f0 !important;
+            text-align: left !important;
+            transition: all 0.3s ease;
+            max-width: 280px !important;
+            border-radius: 15px 15px 15px 0 !important;
+            width: fit-content !important;
+            float: left !important;
+            clear: both !important;
+        }
+
+        .final-message {
+            transform: scale(1.1);
+            max-width: 320px !important;
+            margin: 20px auto !important;
+            background: linear-gradient(135deg, #E3FDF5 0%, #FFE6FA 100%) !important;
+            text-align: center;
+            border-radius: 20px !important;
+            padding: 15px 25px !important;
+            float: none !important;
+            clear: both !important;
+        }
+
+        /* 自定义滚动条 */
+        .chatMessages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chatMessages::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .chatMessages::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+
+        .chatMessages::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* 动画关键帧 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* 添加响应式设计 */
+        @media (max-width: 768px) {
+            .message {
+                max-width: 260px;
+            }
+            
+            .final-message {
+                max-width: 300px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .message {
+                max-width: 240px;
+                font-size: 0.9em;
+            }
+            
+            .final-message {
+                max-width: 280px !important;
+            }
+        }
+
+        /* 验证遮罩层样式 */
+        #verification-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            background: inherit;
+        }
+
+        #verification-container.hidden {
+            display: none;
+        }
+
+        .verification-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: scaleIn 0.3s ease;
+        }
+
+        .verification-box h2 {
+            margin: 0 0 20px 0;
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .verification-hint {
+            margin: 20px 0 0 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* 主界面容器样式 */
+        #main-container {
+            display: none;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #main-container.visible {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 确保验证框居中显示 */
+        #turnstile-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .verification-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: scaleIn 0.3s ease;
+            min-width: 300px;  /* 确保验证框有足够的宽度 */
+        }
+    </style>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
+</head>
+<body>
+    <!-- 验证遮罩层 -->
+    <div id="verification-container">
+        <div class="verification-box">
+            <h2>欢迎使用 CCB AI</h2>
+            <p>请完成人机验证以继续</p>
+            <div id="turnstile-container"></div>
+            <p class="verification-hint">验证通过后将自动显示对话界面</p>
+        </div>
+    </div>
+
+    <!-- 主界面容器 -->
+    <div id="main-container">
+        <h1 class="title">CCB AI 助手</h1>
+        <p class="subtitle">让我们开始对话吧 <i>✨</i></p>
+        <div class="chat-container">
+            <div class="chatMessages"></div>
+            <div class="chatInput">
+                <input type="text" placeholder="请输入你的问题...">
+                <button>发送</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_CONFIG = {
+            endpoint: 'https://ccb.api.vpt.us.kg'  // 你的 Worker URL
+        };
+
+        const input = document.querySelector('.chatInput input');
+        const sendButton = document.querySelector('.chatInput button');
+        const messagesContainer = document.querySelector('.chatMessages');
+        const chatInput = document.querySelector('.chatInput');
+        let hasInteracted = false;
+        let clickCount = 0;
+        let clickTimer = null;
+        let unlocked = false;  // 新增：跟踪解锁状态
+        let turnstileToken = null;
+
+        function setLoading(isLoading) {
+            sendButton.disabled = isLoading;
+            input.disabled = isLoading;
+            input.placeholder = isLoading ? "AI正在思考中..." : "请输入你的问题...";
+        }
+
+        function addMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            messageDiv.textContent = content;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            return messageDiv;
+        }
+
+        // 页面加载时检查验证状态
+        window.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('turnstileToken');
+            if (token) {
+                showMainInterface();
+            } else {
+                showVerificationInterface();
+            }
+        });
+
+        // 显示验证界面
+        function showVerificationInterface() {
+            verificationContainer.classList.remove('hidden');
+            mainContainer.classList.remove('visible');
+        }
+
+        // 显示主界面
+        function showMainInterface() {
+            verificationContainer.classList.add('hidden');
+            mainContainer.classList.add('visible');
+        }
+
+        // Turnstile 回调函数
+        window.onloadTurnstileCallback = function() {
+            turnstile.render('#turnstile-container', {
+                sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
+                theme: 'light',
+                callback: function(token) {
+                    turnstileToken = token;
+                    localStorage.setItem('turnstileToken', token);
+                    showMainInterface();
+                }
+            });
+        };
+
+        async function sendToAI(message) {
+            const token = localStorage.getItem('turnstileToken');
+            if (!token) {
+                showVerificationInterface();
+                throw new Error('需要完成人机验证');
+            }
+
+            const response = await fetch(API_CONFIG.endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'CF-Turnstile-Token': token
+                },
+                body: JSON.stringify({
+                    prompt: message
+                })
+            });
+
+            if (!response.ok) {
+                // 如果验证失败，清除token并显示验证界面
+                if (response.status === 403) {
+                    localStorage.removeItem('turnstileToken');
+                    showVerificationInterface();
+                    throw new Error('验证已过期，请重新验证');
+                }
+                throw new Error('API请求失败');
+            }
+
+            const data = await response.json();
+            return data.result.response;
+        }
+
+        function resetChatInput() {
+            chatInput.style.animation = '';  // 清除之前的动画
+            chatInput.style.opacity = '1';   // 确保可见
+            chatInput.style.transform = 'none';  // 重置任何变换
+            chatInput.classList.remove('hidden');
+            input.value = '';
+            input.focus();
+        }
+
+        async function handleSendMessage() {
+            if (!unlocked && hasInteracted) return;
+            
+            const message = input.value.trim();
+            if (!message) return;
+
+            hasInteracted = true;
+            let aiMessage;
+            
+            try {
+                addMessage(message, true);
+                input.value = '';
+                setLoading(true);
+
+                const response = await sendToAI(message);
+                aiMessage = addMessage(response, false);
+
+            } catch (error) {
+                aiMessage = addMessage(`错误: ${error.message}`, false);
+            } finally {
+                setLoading(false);
+                if (!unlocked) {  // 未解锁状态
+                    chatInput.classList.add('hidden');
+                    setTimeout(() => {
+                        aiMessage.classList.add('final-message');
+                    }, 100);
+                } else {  // 解锁状态
+                    // 不添加 final-message 类，保持普通对话气泡样式
+                    aiMessage.classList.add('normal-message');
+                }
+            }
+        }
+
+        // 点击检测
+        document.addEventListener('click', (e) => {
+            const rightZone = window.innerWidth * 0.2;
+            const bottomZone = window.innerHeight * 0.2;
+            
+            if (e.clientX > (window.innerWidth - rightZone) && 
+                e.clientY > (window.innerHeight - bottomZone)) {
+                
+                clickCount++;
+                
+                clearTimeout(clickTimer);
+                clickTimer = setTimeout(() => {
+                    clickCount = 0;
+                }, 3000);
+                
+                if (clickCount >= 6) {
+                    unlocked = true;
+                    clickCount = 0;
+                    hasInteracted = false;
+                    
+                    // 重置所有已有的 final-message 为普通样式
+                    document.querySelectorAll('.final-message').forEach(msg => {
+                        msg.classList.remove('final-message');
+                        msg.classList.add('normal-message');
+                        // 重置样式
+                        msg.style.transform = 'none';
+                        msg.style.maxWidth = '';
+                        msg.style.margin = '';
+                        msg.style.background = '';
+                        msg.style.textAlign = '';
+                    });
+                    
+                    resetChatInput();
+                    
+                    const resetMessage = addMessage('已解锁多次对话模式 🎉', false);
+                    resetMessage.style.color = '#666';
+                    resetMessage.style.fontSize = '0.8em';
+                    resetMessage.style.textAlign = 'center';
+                    
+                    setTimeout(() => {
+                        resetMessage.style.animation = 'fadeOut 0.5s ease forwards';
+                    }, 3000);
+                }
+            }
+        });
+
+        // 事件监听器
+        sendButton.addEventListener('click', handleSendMessage);
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSendMessage();
+            }
+        });
+
+        // 初始化聚焦到输入框
+        input.focus();
+
+        // 添加必要的样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .chatInput.hidden {
+                opacity: 0;
+                transform: translateY(20px);
+                pointer-events: none;
+            }
+            
+            @keyframes fadeOut {
+                to {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+            }
+
+            .normal-message {
+                transform: none !important;
+                max-width: none !important;
+                margin: 10px 0 !important;
+                background: #f0f0f0 !important;
+                text-align: left !important;
+                transition: all 0.3s ease;
+            }
+
+            .final-message {
+                transform: scale(1.2);
+                max-width: 90%;
+                margin: 20px auto;
+                background: linear-gradient(135deg, #E3FDF5 0%, #FFE6FA 100%);
+                text-align: center;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
