@@ -395,6 +395,12 @@
         let clickTimer = null;
         let unlocked = false;  // 新增：跟踪解锁状态
         let turnstileToken = null;
+        const CONVERSATION_MODE_KEY = 'conversationMode';
+        
+        // 初始化时设置单对话模式
+        if (!localStorage.getItem(CONVERSATION_MODE_KEY)) {
+            localStorage.setItem(CONVERSATION_MODE_KEY, 'single');
+        }
 
         function setLoading(isLoading) {
             sendButton.disabled = isLoading;
@@ -411,7 +417,7 @@
             return messageDiv;
         }
 
-        // 全局变量，存储DOM引用
+        // 全局变量
         let verificationContainer;
         let mainContainer;
 
@@ -420,6 +426,14 @@
             verificationContainer = document.getElementById('verification-container');
             mainContainer = document.getElementById('main-container');
             
+            // 设置为单对话模式
+            const multipleConversationsBtn = document.querySelector('.multiple-conversations');
+            const singleConversationBtn = document.querySelector('.single-conversation');
+            if (multipleConversationsBtn && singleConversationBtn) {
+                multipleConversationsBtn.style.display = 'none';
+                singleConversationBtn.style.display = 'block';
+            }
+            
             // 检查验证状态
             const tokenData = JSON.parse(sessionStorage.getItem('turnstileData') || '{}');
             if (tokenData.token && Date.now() < tokenData.expires) {
@@ -427,8 +441,6 @@
                 showMainInterface();
             } else {
                 sessionStorage.removeItem('turnstileData');
-                // 重置对话模式
-                localStorage.removeItem('multipleConversations');
                 showVerificationInterface();
             }
         }
@@ -472,9 +484,15 @@
                 mainContainer.style.flexDirection = 'column';
                 mainContainer.style.alignItems = 'center';
                 mainContainer.style.minHeight = '100vh';
-                // 重置对话模式
-                document.querySelector('.multiple-conversations').style.display = 'none';
-                document.querySelector('.single-conversation').style.display = 'block';
+                
+                // 强制设置为单对话模式
+                localStorage.setItem(CONVERSATION_MODE_KEY, 'single');
+                const multipleConversationsBtn = document.querySelector('.multiple-conversations');
+                const singleConversationBtn = document.querySelector('.single-conversation');
+                if (multipleConversationsBtn && singleConversationBtn) {
+                    multipleConversationsBtn.style.display = 'none';
+                    singleConversationBtn.style.display = 'block';
+                }
             }
         }
 
@@ -484,28 +502,26 @@
                 sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
                 theme: 'light',
                 retry: 'never',
-                timeout: 3600,
                 callback: function(token) {
                     turnstileToken = token;
                     const tokenData = {
                         token: token,
                         timestamp: Date.now(),
-                        expires: Date.now() + (3600 * 1000) // 1小时后过期
+                        expires: Date.now() + (7200 * 1000) // 2小时后过期
                     };
                     sessionStorage.setItem('turnstileData', JSON.stringify(tokenData));
-                    // 重置对话模式
-                    localStorage.removeItem('multipleConversations');
                     showMainInterface();
                 }
             });
         };
 
+        // 发送消息函数
         async function sendToAI(message) {
             try {
                 const tokenData = JSON.parse(sessionStorage.getItem('turnstileData') || '{}');
                 
                 // 检查 token 是否存在且未过期
-                if (!tokenData.token || Date.now() > tokenData.expires) {
+                if (!tokenData.token || Date.now() >= tokenData.expires) {
                     sessionStorage.removeItem('turnstileData');
                     showVerificationInterface();
                     throw new Error('需要验证');
@@ -522,28 +538,26 @@
                     })
                 });
 
-                // 检查响应状态
-                if (response.status === 403) {
+                const data = await response.json();
+                
+                // 只有在明确的验证失败时才重新验证
+                if (response.status === 403 && data.error === 'Invalid verification') {
                     sessionStorage.removeItem('turnstileData');
                     showVerificationInterface();
                     throw new Error('验证已过期，请重新验证');
                 }
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error('API错误:', errorData);
-                    throw new Error(errorData.error || 'API请求失败');
+                    throw new Error(data.error || 'API请求失败');
                 }
 
-                const data = await response.json();
                 if (!data.result || !data.result.response) {
                     throw new Error('API响应格式错误');
                 }
+
                 return data.result.response;
             } catch (error) {
-                if (error.message.includes('验证')) {
-                    showVerificationInterface();
-                }
+                console.error('API调用错误:', error);
                 throw error;
             }
         }
