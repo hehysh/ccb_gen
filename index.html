@@ -347,6 +347,13 @@
             animation: scaleIn 0.3s ease;
             min-width: 300px;  /* 确保验证框有足够的宽度 */
         }
+
+        /* 添加错误消息样式 */
+        .error-message {
+            background-color: #ffebee !important;
+            color: #c62828 !important;
+            border: 1px solid #ffcdd2;
+        }
     </style>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
 </head>
@@ -428,6 +435,11 @@
             if (verificationContainer && mainContainer) {
                 verificationContainer.style.display = 'flex';
                 mainContainer.style.display = 'none';
+                
+                // 清除旧的验证框
+                const container = document.getElementById('turnstile-container');
+                container.innerHTML = '';
+                
                 // 重新渲染验证组件
                 turnstile.render('#turnstile-container', {
                     sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
@@ -466,30 +478,43 @@
         };
 
         async function sendToAI(message) {
-            const token = sessionStorage.getItem('turnstileToken');
-            const response = await fetch(API_CONFIG.endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'CF-Turnstile-Token': token
-                },
-                body: JSON.stringify({
-                    prompt: message
-                })
-            });
-
-            if (!response.ok) {
-                // 只有在验证失效时才重新验证
-                if (response.status === 403) {
-                    sessionStorage.removeItem('turnstileToken');
+            try {
+                const token = sessionStorage.getItem('turnstileToken');
+                if (!token) {
                     showVerificationInterface();
-                    throw new Error('验证已过期，请重新验证');
+                    throw new Error('需要验证');
                 }
-                throw new Error('API请求失败');
-            }
 
-            const data = await response.json();
-            return data.result.response;
+                const response = await fetch(API_CONFIG.endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'CF-Turnstile-Token': token
+                    },
+                    body: JSON.stringify({
+                        prompt: message
+                    })
+                });
+
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        sessionStorage.removeItem('turnstileToken');
+                        showVerificationInterface();
+                        throw new Error('验证已过期，请重新验证');
+                    }
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'API请求失败');
+                }
+
+                const data = await response.json();
+                if (!data.result || !data.result.response) {
+                    throw new Error('API响应格式错误');
+                }
+                return data.result.response;
+            } catch (error) {
+                console.error('API调用错误:', error);
+                throw error;
+            }
         }
 
         function resetChatInput() {
@@ -501,35 +526,29 @@
             input.focus();
         }
 
+        // 添加错误处理函数
+        function handleError(error) {
+            const errorMessage = document.createElement('div');
+            errorMessage.className = 'message error-message';
+            errorMessage.textContent = error.message;
+            document.querySelector('.chatMessages').appendChild(errorMessage);
+        }
+
+        // 修改消息发送处理函数
         async function handleSendMessage() {
-            if (!unlocked && hasInteracted) return;
-            
+            const input = document.querySelector('.chatInput input');
             const message = input.value.trim();
             if (!message) return;
 
-            hasInteracted = true;
-            let aiMessage;
-            
+            input.value = '';
+            addMessage(message, true);
+
             try {
-                addMessage(message, true);
-                input.value = '';
-                setLoading(true);
-
                 const response = await sendToAI(message);
-                aiMessage = addMessage(response, false);
-
+                addMessage(response, false);
             } catch (error) {
-                aiMessage = addMessage(`错误: ${error.message}`, false);
-            } finally {
-                setLoading(false);
-                if (!unlocked) {  // 未解锁状态
-                    chatInput.classList.add('hidden');
-                    setTimeout(() => {
-                        aiMessage.classList.add('final-message');
-                    }, 100);
-                } else {  // 解锁状态
-                    // 不添加 final-message 类，保持普通对话气泡样式
-                    aiMessage.classList.add('normal-message');
+                if (error.message !== '需要验证') {
+                    handleError(error);
                 }
             }
         }
