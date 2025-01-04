@@ -352,7 +352,7 @@
 </head>
 <body>
     <!-- 验证遮罩层 -->
-    <div id="verification-container">
+    <div id="verification-container" class="verification-overlay">
         <div class="verification-box">
             <h2>欢迎使用 CCB AI</h2>
             <p>请完成人机验证以继续</p>
@@ -404,32 +404,42 @@
             return messageDiv;
         }
 
-        // 页面加载时检查验证状态
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('页面加载完成');  // 添加调试日志
-            const token = localStorage.getItem('turnstileToken');
+        // 全局变量，存储DOM引用
+        let verificationContainer;
+        let mainContainer;
+
+        // 初始化函数
+        function initializeApp() {
+            verificationContainer = document.getElementById('verification-container');
+            mainContainer = document.getElementById('main-container');
+            
+            // 检查验证状态
+            const token = sessionStorage.getItem('turnstileToken');
             if (token) {
-                console.log('找到已存储的token');  // 添加调试日志
+                turnstileToken = token;
                 showMainInterface();
             } else {
-                console.log('未找到token，显示验证界面');  // 添加调试日志
                 showVerificationInterface();
             }
-        });
+        }
 
         // 显示验证界面
         function showVerificationInterface() {
-            verificationContainer.style.display = 'flex';
-            mainContainer.style.display = 'none';
+            if (verificationContainer && mainContainer) {
+                verificationContainer.style.display = 'flex';
+                mainContainer.style.display = 'none';
+            }
         }
 
         // 显示主界面
         function showMainInterface() {
-            verificationContainer.style.display = 'none';
-            mainContainer.style.display = 'flex';  // 改为 flex
-            mainContainer.style.flexDirection = 'column';  // 添加列布局
-            mainContainer.style.alignItems = 'center';  // 居中对齐
-            mainContainer.style.minHeight = '100vh';  // 保持全屏高度
+            if (verificationContainer && mainContainer) {
+                verificationContainer.style.display = 'none';
+                mainContainer.style.display = 'flex';
+                mainContainer.style.flexDirection = 'column';
+                mainContainer.style.alignItems = 'center';
+                mainContainer.style.minHeight = '100vh';
+            }
         }
 
         // Turnstile 回调函数
@@ -438,9 +448,8 @@
                 sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
                 theme: 'light',
                 callback: function(token) {
-                    console.log('验证成功，token:', token);  // 添加调试日志
                     turnstileToken = token;
-                    localStorage.setItem('turnstileToken', token);
+                    sessionStorage.setItem('turnstileToken', token);
                     showMainInterface();
                 }
             });
@@ -612,6 +621,9 @@
             }
         `;
         document.head.appendChild(style);
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
