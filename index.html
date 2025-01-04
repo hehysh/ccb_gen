@@ -428,6 +428,16 @@
             if (verificationContainer && mainContainer) {
                 verificationContainer.style.display = 'flex';
                 mainContainer.style.display = 'none';
+                // 重新渲染验证组件
+                turnstile.render('#turnstile-container', {
+                    sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
+                    theme: 'light',
+                    callback: function(token) {
+                        turnstileToken = token;
+                        sessionStorage.setItem('turnstileToken', token);
+                        showMainInterface();
+                    }
+                });
             }
         }
 
@@ -456,12 +466,7 @@
         };
 
         async function sendToAI(message) {
-            const token = localStorage.getItem('turnstileToken');
-            if (!token) {
-                showVerificationInterface();
-                throw new Error('需要完成人机验证');
-            }
-
+            const token = sessionStorage.getItem('turnstileToken');
             const response = await fetch(API_CONFIG.endpoint, {
                 method: 'POST',
                 headers: {
@@ -474,9 +479,9 @@
             });
 
             if (!response.ok) {
-                // 如果验证失败，清除token并显示验证界面
+                // 只有在验证失效时才重新验证
                 if (response.status === 403) {
-                    localStorage.removeItem('turnstileToken');
+                    sessionStorage.removeItem('turnstileToken');
                     showVerificationInterface();
                     throw new Error('验证已过期，请重新验证');
                 }
