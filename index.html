@@ -8,94 +8,277 @@
         body {
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        #main-container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         .title {
-            text-align: center;
-            color: #2c3e50;
-            margin-bottom: 10px;
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: fadeInDown 1s ease;
         }
 
         .subtitle {
-            text-align: center;
-            color: #34495e;
-            margin-top: 0;
+            color: rgba(255,255,255,0.9);
             margin-bottom: 30px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            animation: fadeInUp 1s ease 0.5s both;
         }
 
         .chat-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            position: relative;
+            width: 90%;
+            max-width: 800px;
+            height: 70vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
             overflow: hidden;
+            animation: fadeIn 1s ease;
+            margin: 0 auto; /* 居中 */
         }
 
         .chatMessages {
-            padding: 20px;
-            max-height: 500px;
+            flex: 1;
             overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .chatMessages::after {
+            content: '';
+            display: table;
+            clear: both;
         }
 
         .message {
-            margin-bottom: 15px;
-            padding: 10px 15px;
-            border-radius: 10px;
-            max-width: 80%;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s ease forwards;
+            display: inline-block;
+            max-width: 280px;
+            margin: 10px;
+            padding: 12px 18px;
+            border-radius: 15px;
             word-wrap: break-word;
+            font-size: 0.95em;
+            line-height: 1.5;
+            box-sizing: border-box;
+            width: fit-content;
         }
 
         .user-message {
-            background: #007AFF;
+            background: linear-gradient(135deg, #007AFF, #00C6FF);
             color: white;
             margin-left: auto;
+            margin-right: 10px;
+            border-radius: 15px 15px 0 15px;
+            animation: slideInRight 0.5s ease forwards;
+            float: right;
+            clear: both;
         }
 
         .ai-message {
-            background: #E9ECEF;
-            color: #2c3e50;
+            background: #f0f0f0;
+            color: #333;
+            margin-right: auto;
+            margin-left: 10px;
+            border-radius: 15px 15px 15px 0;
+            animation: slideInLeft 0.5s ease forwards;
+            float: left;
+            clear: both;
         }
 
         .chatInput {
-            display: flex;
+            position: relative;
+            bottom: 0;
+            width: 100%;
             padding: 20px;
-            background: #f8f9fa;
-            border-top: 1px solid #dee2e6;
+            background: white;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        .chatInput.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
         }
 
         .chatInput input {
             flex: 1;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            margin-right: 10px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
             font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .chatInput input:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 10px rgba(0,122,255,0.2);
         }
 
         .chatInput button {
-            padding: 10px 20px;
-            background: #007AFF;
-            color: white;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #007AFF, #00C6FF);
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            border-radius: 10px;
+            color: white;
             font-size: 16px;
-            transition: background 0.3s;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
         .chatInput button:hover {
-            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,122,255,0.3);
         }
 
-        .verification-overlay {
+        .chatInput button:active {
+            transform: translateY(0);
+        }
+
+        .normal-message {
+            transform: none !important;
+            margin: 10px 0 10px 10px !important;
+            background: #f0f0f0 !important;
+            text-align: left !important;
+            transition: all 0.3s ease;
+            max-width: 280px !important;
+            border-radius: 15px 15px 15px 0 !important;
+            width: fit-content !important;
+            float: left !important;
+            clear: both !important;
+        }
+
+        .final-message {
+            transform: scale(1.1);
+            max-width: 320px !important;
+            margin: 20px auto !important;
+            background: linear-gradient(135deg, #E3FDF5 0%, #FFE6FA 100%) !important;
+            text-align: center;
+            border-radius: 20px !important;
+            padding: 15px 25px !important;
+            float: none !important;
+            clear: both !important;
+        }
+
+        /* 自定义滚动条 */
+        .chatMessages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chatMessages::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .chatMessages::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.2);
+            border-radius: 3px;
+        }
+
+        .chatMessages::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* 动画关键帧 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* 添加响应式设计 */
+        @media (max-width: 768px) {
+            .message {
+                max-width: 260px;
+            }
+            
+            .final-message {
+                max-width: 300px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .message {
+                max-width: 240px;
+                font-size: 0.9em;
+            }
+            
+            .final-message {
+                max-width: 280px !important;
+            }
+        }
+
+        /* 验证遮罩层样式 */
+        #verification-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -104,8 +287,12 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: inherit;
             z-index: 1000;
+            background: inherit;
+        }
+
+        #verification-container.hidden {
+            display: none;
         }
 
         .verification-box {
@@ -114,22 +301,58 @@
             border-radius: 20px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             text-align: center;
+            animation: scaleIn 0.3s ease;
         }
 
         .verification-box h2 {
             margin: 0 0 20px 0;
             color: #333;
+            font-size: 1.5em;
         }
 
         .verification-hint {
             margin: 20px 0 0 0;
             color: #666;
+            font-size: 0.9em;
         }
 
+        /* 主界面容器样式 */
+        #main-container {
+            display: none;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #main-container.visible {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* 确保验证框居中显示 */
         #turnstile-container {
             display: flex;
             justify-content: center;
             margin: 20px 0;
+        }
+
+        .verification-box {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: scaleIn 0.3s ease;
+            min-width: 300px;  /* 确保验证框有足够的宽度 */
+        }
+
+        /* 添加错误消息样式 */
+        .error-message {
+            background-color: #ffebee !important;
+            color: #c62828 !important;
+            border: 1px solid #ffcdd2;
         }
     </style>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
