@@ -421,11 +421,12 @@
             mainContainer = document.getElementById('main-container');
             
             // 检查验证状态
-            const token = sessionStorage.getItem('turnstileToken');
-            if (token) {
-                turnstileToken = token;
+            const tokenData = JSON.parse(sessionStorage.getItem('turnstileData') || '{}');
+            if (tokenData.token && Date.now() < tokenData.expires) {
+                turnstileToken = tokenData.token;
                 showMainInterface();
             } else {
+                sessionStorage.removeItem('turnstileData');
                 showVerificationInterface();
             }
         }
@@ -444,9 +445,17 @@
                 turnstile.render('#turnstile-container', {
                     sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
                     theme: 'light',
+                    retry: 'never',  // 禁止自动重试
+                    timeout: 3600,   // 设置超时时间为1小时
                     callback: function(token) {
                         turnstileToken = token;
-                        sessionStorage.setItem('turnstileToken', token);
+                        // 存储token和时间戳
+                        const tokenData = {
+                            token: token,
+                            timestamp: Date.now(),
+                            expires: Date.now() + (3600 * 1000) // 1小时后过期
+                        };
+                        sessionStorage.setItem('turnstileData', JSON.stringify(tokenData));
                         showMainInterface();
                     }
                 });
@@ -469,9 +478,17 @@
             turnstile.render('#turnstile-container', {
                 sitekey: '0x4AAAAAAA4i3Cks9W9uh_c2',
                 theme: 'light',
+                retry: 'never',  // 禁止自动重试
+                timeout: 3600,   // 设置超时时间为1小时
                 callback: function(token) {
                     turnstileToken = token;
-                    sessionStorage.setItem('turnstileToken', token);
+                    // 存储token和时间戳
+                    const tokenData = {
+                        token: token,
+                        timestamp: Date.now(),
+                        expires: Date.now() + (3600 * 1000) // 1小时后过期
+                    };
+                    sessionStorage.setItem('turnstileData', JSON.stringify(tokenData));
                     showMainInterface();
                 }
             });
@@ -479,8 +496,11 @@
 
         async function sendToAI(message) {
             try {
-                const token = sessionStorage.getItem('turnstileToken');
-                if (!token) {
+                const tokenData = JSON.parse(sessionStorage.getItem('turnstileData') || '{}');
+                
+                // 检查 token 是否存在且未过期
+                if (!tokenData.token || Date.now() > tokenData.expires) {
+                    sessionStorage.removeItem('turnstileData');
                     showVerificationInterface();
                     throw new Error('需要验证');
                 }
@@ -489,7 +509,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'CF-Turnstile-Token': token
+                        'CF-Turnstile-Token': tokenData.token
                     },
                     body: JSON.stringify({
                         prompt: message
@@ -498,7 +518,7 @@
 
                 if (!response.ok) {
                     if (response.status === 403) {
-                        sessionStorage.removeItem('turnstileToken');
+                        sessionStorage.removeItem('turnstileData');
                         showVerificationInterface();
                         throw new Error('验证已过期，请重新验证');
                     }
