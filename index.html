@@ -426,9 +426,17 @@
             verificationContainer = document.getElementById('verification-container');
             mainContainer = document.getElementById('main-container');
             
-            // 强制设置单对话模式
-            document.querySelector('.multiple-conversations').style.display = 'none';
-            document.querySelector('.single-conversation').style.display = 'block';
+            // 确保元素存在后再操作
+            const multipleConversationsBtn = document.querySelector('.multiple-conversations');
+            const singleConversationBtn = document.querySelector('.single-conversation');
+            
+            // 只有当按钮存在时才设置显示状态
+            if (multipleConversationsBtn) {
+                multipleConversationsBtn.style.display = 'none';
+            }
+            if (singleConversationBtn) {
+                singleConversationBtn.style.display = 'block';
+            }
             
             // 检查验证状态
             const token = localStorage.getItem('turnstileToken');
